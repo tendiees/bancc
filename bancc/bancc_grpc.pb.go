@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BanccClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	Auth(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 }
 
 type banccClient struct {
@@ -37,11 +38,21 @@ func (c *banccClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *banccClient) Auth(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, "/bancc.Bancc/Auth", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BanccServer is the server API for Bancc service.
 // All implementations must embed UnimplementedBanccServer
 // for forward compatibility
 type BanccServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	Auth(context.Context, *AuthRequest) (*AuthResponse, error)
 	mustEmbedUnimplementedBanccServer()
 }
 
@@ -51,6 +62,9 @@ type UnimplementedBanccServer struct {
 
 func (*UnimplementedBanccServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (*UnimplementedBanccServer) Auth(context.Context, *AuthRequest) (*AuthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Auth not implemented")
 }
 func (*UnimplementedBanccServer) mustEmbedUnimplementedBanccServer() {}
 
@@ -76,6 +90,24 @@ func _Bancc_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Bancc_Auth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BanccServer).Auth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bancc.Bancc/Auth",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BanccServer).Auth(ctx, req.(*AuthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Bancc_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "bancc.Bancc",
 	HandlerType: (*BanccServer)(nil),
@@ -83,6 +115,10 @@ var _Bancc_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _Bancc_Ping_Handler,
+		},
+		{
+			MethodName: "Auth",
+			Handler:    _Bancc_Auth_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
